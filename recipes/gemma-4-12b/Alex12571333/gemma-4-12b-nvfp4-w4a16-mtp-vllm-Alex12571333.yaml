@@ -1,0 +1,52 @@
+recipe_version: "2"
+name: gemma-4-12b-it-nvfp4-w4a16-mtp
+model: coolthor/gemma-4-12B-it-NVFP4A16
+runtime: vllm
+container: vllm/vllm-openai:gemma4-unified
+
+metadata:
+  description: |
+    Gemma 4 12B-it weight-only NVFP4 (W4A16) with multimodal (text/image/audio/video) intact,
+    plus speculative decoding via google/gemma-4-12b-it-assistant drafter (num_speculative_tokens=5).
+    Benchmarked at ~44 tok/s single-stream decode on DGX Spark GB10 (vs 25 tok/s without MTP).
+    Multimodal works (unlike W4A4 variants which break vision/audio).
+  maintainer: "@Alex12571333"
+  model_params: 12B
+  model_dtype: nvfp4
+  kv_dtype: fp8
+  quantization: compressed-tensors
+  quant_bits: 4
+
+defaults:
+  port: 8000
+  host: 0.0.0.0
+  tensor_parallel: 1
+  pipeline_parallel: 1
+  gpu_memory_utilization: 0.55
+  max_model_len: 131072
+  max_num_seqs: 8
+  served_model_name: gemma-4-12b-nvfp4
+  tool_call_parser: gemma4
+  reasoning_parser: gemma4
+  kv_cache_dtype: fp8
+  speculative_config: '{"model":"google/gemma-4-12b-it-assistant","num_speculative_tokens":5}'
+
+env:
+  VLLM_MARLIN_USE_ATOMIC_ADD: "1"
+
+command: |
+  vllm serve {model} \
+    --host {host} \
+    --port {port} \
+    --served-model-name {served_model_name} \
+    --max-model-len {max_model_len} \
+    --max-num-seqs {max_num_seqs} \
+    --gpu-memory-utilization {gpu_memory_utilization} \
+    --kv-cache-dtype {kv_cache_dtype} \
+    --enable-prefix-caching \
+    --enable-auto-tool-choice \
+    --tool-call-parser {tool_call_parser} \
+    --reasoning-parser {reasoning_parser} \
+    --trust-remote-code \
+    --speculative-config '{speculative_config}' \
+    -tp {tensor_parallel} -pp {pipeline_parallel}

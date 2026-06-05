@@ -1,0 +1,5 @@
+registries:
+  - name: alex12571333
+    description: Alex12571333's sparkrun recipes for DGX Spark GB10
+    recipes: recipes
+    visible: true
